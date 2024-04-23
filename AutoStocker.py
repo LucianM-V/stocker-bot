@@ -100,33 +100,37 @@ async def check_stock_status():
   global previous_stock_status
 
   for product in products:
-    response = requests.get(product["url"])
-    soup = BeautifulSoup(response.content, "html.parser")
+    try:
+      response = requests.get(product["url"])
+      soup = BeautifulSoup(response.content, "html.parser")
 
-    current_stock_status = None
+      current_stock_status = None
 
-    # Check for stock status based on product information
-    if product["stock_status_text_out_of_stock"] in soup.text:
-      current_stock_status = "OUT_OF_STOCK"
-    elif product["stock_status_text_in_stock"] in soup.text:
-      current_stock_status = "IN_STOCK"
-    else:
+      # Check for stock status based on product information
+      if product["stock_status_text_out_of_stock"] in soup.text:
         current_stock_status = "OUT_OF_STOCK"
+      elif product["stock_status_text_in_stock"] in soup.text:
+        current_stock_status = "IN_STOCK"
+      else:
+          current_stock_status = "OUT_OF_STOCK"
 
-    # Check if the stock status changed and send a message
-    if previous_stock_status.get(product["url"]) != current_stock_status:
-      previous_stock_status[product["url"]] = current_stock_status
+      # Check if the stock status changed and send a message
+      if previous_stock_status.get(product["url"]) != current_stock_status:
+        previous_stock_status[product["url"]] = current_stock_status
 
-      channel = client.get_channel(product["channel_id"])
+        channel = client.get_channel(product["channel_id"])
 
-      # Send message based on current stock status
-      message = ""
-      if current_stock_status == "OUT_OF_STOCK":
-        message = f" **Stock Alert:** {product['name']} is out of stock!"
-      elif current_stock_status == "IN_STOCK":
-        message = f" **Stock Alert:** {product['name']} is in stock!"
+        # Send message based on current stock status
+        message = ""
+        if current_stock_status == "OUT_OF_STOCK":
+          message = f" **Stock Alert:** {product['name']} is out of stock!"
+        elif current_stock_status == "IN_STOCK":
+          message = f" **Stock Alert:** {product['name']} is in stock!"
 
-      await channel.send(message)
+        await channel.send(message)
+    except Exception as e:
+      print(f"Error checking stock for {product['name']}: {e}")
+      # You can also log the error using a logging library
 
 
 @client.event
